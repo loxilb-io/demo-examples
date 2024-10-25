@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: loxilb-lb
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: loxilb-app
+  template:
+    metadata:
+      name: loxilb-lb
+      labels:
+        app: loxilb-app
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node: loxilbnode02
+      serviceAccountName: loxilb
+      initContainers:
+      - name: mkllb-joinurl
+        command:
+          - sh
+          - -ec
+          - |
+            /usr/local/sbin/mkllb-url -a 0.0.0.0 -z llb -t hostcidr -c aws && \
+            echo "Init Container Done";
+        image: "ghcr.io/loxilb-io/loxilb:latest"
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: kubeconfig-vol
+            mountPath: /root/.kube/config
+            subPath: kubeconfig
+      containers:
+      - name: loxilb-app
+        image: "ghcr.io/loxilb-io/loxilb:latest"
+        imagePullPolicy: Always
+        command: [ "/root/loxilb-io/loxilb/loxilb", "--egr-hooks", "--blacklist=cni[0-9a-z]|veth.|flannel.|eni." ]
+        ports:
+        - containerPort: 11111
+        - containerPort: 179
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+        lifecycle:
+          preStop:
+            exec:
+              command:
+                - sh
+                - -ec
+                - |
+                  /usr/local/sbin/mkllb-url -a 0.0.0.0 -z llb -t hostcidr -c aws -x && \
+                  echo "Stop hook done";
+        volumeMounts:
+          - name: kubeconfig-vol
+            mountPath: /root/.kube/config
+            subPath: kubeconfig
+      terminationGracePeriodSeconds: 90
+      volumes:
+      - name: kubeconfig-vol
+        configMap:
+          name: kubeconfig
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loxilb-lb-service
+  namespace: kube-system
+spec:
+  clusterIP: None
+  selector:
+    app: loxilb-app
+  ports:
+  - name: loxilb-app
+    port: 11111
+    targetPort: 11111
+    protocol: TCP
+  - name: loxilb-app-bgp
+    port: 179
+    targetPort: 179
+    protocol: TCP
