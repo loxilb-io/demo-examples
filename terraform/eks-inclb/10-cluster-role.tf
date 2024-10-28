@@ -62,17 +62,6 @@ resource "kubernetes_cluster_role_binding" "loxilb" {
   }
 }
 
-data "kubernetes_config_map" "aws_auth" {
-  metadata {
-    name = "aws-auth"
-    namespace = "kube-system"
-  }
-
- depends_on = [
-    aws_eks_cluster.demo,
- ]
-}
-
 resource "null_resource" "wait_cluster" {
   provisioner "local-exec" {
     command = "sleep 120"
@@ -83,6 +72,19 @@ resource "null_resource" "wait_cluster" {
     aws_eks_node_group.lz-worker-nodes,
     aws_eks_node_group.worker-nodes
   ]
+}
+
+data "kubernetes_config_map" "aws_auth" {
+  metadata {
+    name = "aws-auth"
+    namespace = "kube-system"
+  }
+
+ depends_on = [
+  aws_eks_cluster.demo,
+  aws_eks_node_group.lz-worker-nodes,
+  aws_eks_node_group.worker-nodes
+ ]
 }
 
 resource "kubernetes_config_map_v1_data" "aws_auth" {
