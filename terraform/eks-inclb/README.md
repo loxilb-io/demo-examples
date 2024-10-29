@@ -18,6 +18,7 @@ terraform apply
 ```
 
 As per you need, you may also change the default paramenter as below:
+
 In the `0-provider.tf`, we can specify the `region` for the cluster:
 ```
 provider "aws" {
