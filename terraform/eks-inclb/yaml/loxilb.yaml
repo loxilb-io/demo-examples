@@ -34,9 +34,11 @@ spec:
             subPath: kubeconfig
       containers:
       - name: loxilb-app
-        image: "ghcr.io/loxilb-io/loxilb:latest"
+        image: "ghcr.io/loxilb-io/loxilb:debug"
         imagePullPolicy: Always
-        command: [ "/root/loxilb-io/loxilb/loxilb", "--egr-hooks", "--blacklist=cni[0-9a-z]|veth.|flannel.|eni." ]
+        # If we need to schedule workloads in same node as loxilb, add --egr-hooks
+        #command: [ "/root/loxilb-io/loxilb/loxilb", "--egr-hooks", "--blacklist=cni[0-9a-z]|veth.|flannel.|eni." ]
+        command: [ "/root/loxilb-io/loxilb/loxilb", "--blacklist=cni[0-9a-z]|veth.|flannel.|eni." ]
         ports:
         - containerPort: 11111
         - containerPort: 179
