@@ -56,6 +56,8 @@ spec:
         app.kubernetes.io/name: external-dns
     spec:
       serviceAccountName: external-dns
+      nodeSelector:
+       node: wlznode02
       containers:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.15.0
